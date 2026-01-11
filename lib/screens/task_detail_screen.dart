@@ -78,30 +78,47 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Task?'),
-        content: const Text('Are you sure you want to permanently delete this task? This action cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to permanently delete this task? This action cannot be undone.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () async {
               try {
                 await _apiService.deleteTask(widget.taskId);
                 if (mounted) {
                   Navigator.pop(dialogContext); // Close the dialog
-                  Navigator.pop(context, true); // Pop the detail screen and return true
+                  Navigator.pop(
+                    context,
+                    true,
+                  ); // Pop the detail screen and return true
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Task deleted successfully'), backgroundColor: Colors.green),
+                    const SnackBar(
+                      content: Text('Task deleted successfully'),
+                      backgroundColor: Colors.green,
+                    ),
                   );
                 }
               } catch (e) {
                 if (mounted) {
                   Navigator.pop(dialogContext);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to delete task: $e'), backgroundColor: Colors.red),
+                    SnackBar(
+                      content: Text('Failed to delete task: $e'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -110,7 +127,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   }
 
   // --- Status Change Logic (no changes) ---
-  void _showStatusChangeDialog(BuildContext context, List<dynamic> statuses, String currentStatus) {
+  void _showStatusChangeDialog(
+    BuildContext context,
+    List<dynamic> statuses,
+    String currentStatus,
+  ) {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -125,13 +146,20 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 final status = statuses[index];
                 return ListTile(
                   title: Text(status['name']),
-                  trailing: status['name'] == currentStatus ? const Icon(Icons.check, color: AppColors.primary) : null,
+                  trailing: status['name'] == currentStatus
+                      ? const Icon(Icons.check, color: AppColors.primary)
+                      : null,
                   onTap: () => _updateTaskStatus(status['id'], dialogContext),
                 );
               },
             ),
           ),
-          actions: [TextButton(child: const Text('Cancel'), onPressed: () => Navigator.of(dialogContext).pop())],
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+          ],
         );
       },
     );
@@ -145,7 +173,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     } catch (e) {
       if (mounted) {
         Navigator.of(dialogContext).pop();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update status: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to update status: $e')));
       }
     }
   }
@@ -155,13 +185,18 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     if (_newCommentController.text.trim().isEmpty) return;
     setState(() => _isPostingComment = true);
     try {
-      await _apiService.createComment(widget.taskId, _newCommentController.text);
+      await _apiService.createComment(
+        widget.taskId,
+        _newCommentController.text,
+      );
       _newCommentController.clear();
       FocusScope.of(context).unfocus();
       _refreshData();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to post comment: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to post comment: $e')));
       }
     } finally {
       if (mounted) setState(() => _isPostingComment = false);
@@ -174,18 +209,30 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Edit Comment'),
-        content: TextField(controller: editController, autofocus: true, maxLines: null),
+        content: TextField(
+          controller: editController,
+          autofocus: true,
+          maxLines: null,
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () async {
               try {
-                await _apiService.updateComment(comment['id'], editController.text);
+                await _apiService.updateComment(
+                  comment['id'],
+                  editController.text,
+                );
                 if (mounted) Navigator.pop(dialogContext);
                 _refreshData();
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to edit comment: $e')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to edit comment: $e')),
+                  );
                 }
               }
             },
@@ -201,9 +248,14 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Comment?'),
-        content: const Text('Are you sure you want to permanently delete this comment?'),
+        content: const Text(
+          'Are you sure you want to permanently delete this comment?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () async {
               try {
@@ -212,11 +264,16 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 _refreshData();
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete comment: $e')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to delete comment: $e')),
+                  );
                 }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -231,20 +288,30 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         future: _initialDataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Scaffold(appBar: AppBar(), body: const Center(child: CircularProgressIndicator()));
+            return Scaffold(
+              appBar: AppBar(),
+              body: const Center(child: CircularProgressIndicator()),
+            );
           }
           if (snapshot.hasError) {
-            return Scaffold(appBar: AppBar(), body: Center(child: Text('Error: ${snapshot.error}')));
+            return Scaffold(
+              appBar: AppBar(),
+              body: Center(child: Text('Error: ${snapshot.error}')),
+            );
           }
           if (!snapshot.hasData) {
-            return Scaffold(appBar: AppBar(), body: const Center(child: Text('No details found.')));
+            return Scaffold(
+              appBar: AppBar(),
+              body: const Center(child: Text('No details found.')),
+            );
           }
 
           final details = snapshot.data!['details'] as Map<String, dynamic>;
           final statuses = snapshot.data!['statuses'] as List<dynamic>;
           final comments = details['comments'] as List;
-          
-          final permissions = details['permissions'] as Map<String, dynamic>? ?? {};
+
+          final permissions =
+              details['permissions'] as Map<String, dynamic>? ?? {};
           final bool canUpdate = permissions['can_update'] ?? false;
           final bool canDelete = permissions['can_delete'] ?? false;
 
@@ -275,7 +342,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(details['name'], style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                        Text(
+                          details['name'],
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -283,30 +354,67 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('STATUS', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                                Text(details['status_name'], style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                const Text(
+                                  'STATUS',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                Text(
+                                  details['status_name'],
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ],
                             ),
                             ElevatedButton.icon(
                               icon: const Icon(Icons.edit, size: 16),
                               label: const Text('Change'),
-                              onPressed: () => _showStatusChangeDialog(context, statuses, details['status_name']),
-                              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                              onPressed: () => _showStatusChangeDialog(
+                                context,
+                                statuses,
+                                details['status_name'],
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                              ),
                             ),
                           ],
                         ),
                         const Divider(height: 32),
-                        Text('Description', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                        Text(
+                          'Description',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 8),
                         Text(
-                          (details['description'] != null && details['description'].isNotEmpty) ? details['description'] : 'No description provided.',
-                          style: const TextStyle(fontSize: 16, height: 1.5, color: AppColors.textSecondary),
+                          (details['description'] != null &&
+                                  details['description'].isNotEmpty)
+                              ? details['description']
+                              : 'No description provided.',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            height: 1.5,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                         const Divider(height: 32),
-                        Text('Comments', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                        Text(
+                          'Comments',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
                         const SizedBox(height: 16),
                         if (comments.isEmpty)
-                          const Text('No comments yet.', style: TextStyle(color: AppColors.textSecondary))
+                          const Text(
+                            'No comments yet.',
+                            style: TextStyle(color: AppColors.textSecondary),
+                          )
                         else
                           ListView.builder(
                             shrinkWrap: true,
@@ -318,7 +426,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                 comment: comment,
                                 currentUserId: _currentUserId,
                                 onEdit: () => _showEditCommentDialog(comment),
-                                onDelete: () => _showDeleteConfirmationDialog(comment),
+                                onDelete: () =>
+                                    _showDeleteConfirmationDialog(comment),
                               );
                             },
                           ),
@@ -355,7 +464,14 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             ),
           ),
           _isPostingComment
-              ? const Padding(padding: EdgeInsets.all(12.0), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 3)))
+              ? const Padding(
+                  padding: EdgeInsets.all(12.0),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 3),
+                  ),
+                )
               : IconButton(
                   icon: const Icon(Icons.send, color: AppColors.primary),
                   onPressed: _postNewComment,
