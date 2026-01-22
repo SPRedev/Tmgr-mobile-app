@@ -253,4 +253,60 @@ class ApiService {
       throw Exception('Failed to delete task. Check console for details.');
     }
   }
+  // In lib/api_service.dart
+
+  Future<bool> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String newPasswordConfirmation,
+  }) async {
+    final token = await _getToken();
+    if (token == null) {
+      throw Exception('User is not authenticated.');
+    }
+
+    // We will wrap only the http call in a try...catch block
+    // to handle network failures.
+    http.Response response;
+    try {
+      response = await http
+          .post(
+            Uri.parse('$_baseUrl/user/manual-change-password'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({
+              'current_password': currentPassword,
+              'new_password': newPassword,
+              'new_password_confirmation': newPasswordConfirmation,
+            }),
+          )
+          .timeout(
+            const Duration(seconds: 15),
+          ); // Add a timeout for good measure
+    } catch (e) {
+      // This catch block now ONLY handles network errors (e.g., no internet, server down).
+      print('Change Password Network Error: ${e.toString()}');
+      throw Exception(
+        'Failed to connect to the server. Please check your connection.',
+      );
+    }
+
+    // Now, we handle the response outside the try...catch block.
+    if (response.statusCode == 200) {
+      // Success!
+      return true;
+    } else {
+      // This is an API error (e.g., wrong password, validation fail).
+      // We decode the body and throw the specific message from the server.
+      final errorBody = json.decode(response.body);
+      final errorMessage =
+          errorBody['error'] ??
+          errorBody['message'] ??
+          'An unknown error occurred.';
+      throw Exception(errorMessage);
+    }
+  }
 }

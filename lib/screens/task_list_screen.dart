@@ -8,6 +8,7 @@ import 'package:ruko_mobile_app/screens/notification_screen.dart';
 import 'package:ruko_mobile_app/screens/task_detail_screen.dart';
 import 'package:ruko_mobile_app/widgets/task_card.dart';
 import 'package:ruko_mobile_app/widgets/filter_chip.dart';
+import 'package:ruko_mobile_app/screens/change_password_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -205,9 +206,11 @@ class _TaskListScreenState extends State<TaskListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // The NEW, improved AppBar
       appBar: AppBar(
         title: Text('Tasks for $_username'),
         actions: [
+          // --- Notification Button (Stays the same) ---
           IconButton(
             icon: const Icon(Icons.notifications),
             onPressed: () => Navigator.push(
@@ -217,9 +220,49 @@ class _TaskListScreenState extends State<TaskListScreen> {
               ),
             ),
           ),
-          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
+
+          // --- NEW: Settings/Profile Menu ---
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              // This function is called when a menu item is tapped.
+              if (value == 'change_password') {
+                // Navigate to the Change Password screen
+                // The CORRECTED line...
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        ChangePasswordScreen(), // <-- REMOVED 'const'
+                  ),
+                );
+              } else if (value == 'logout') {
+                // Call your existing logout method
+                _logout();
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              // --- Menu Item 1: Change Password ---
+              const PopupMenuItem<String>(
+                value: 'change_password',
+                child: ListTile(
+                  leading: Icon(Icons.password),
+                  title: Text('Change Password'),
+                ),
+              ),
+              // --- Menu Item 2: Logout ---
+              const PopupMenuItem<String>(
+                value: 'logout',
+                child: ListTile(
+                  leading: Icon(Icons.logout, color: Colors.red),
+                  title: Text('Logout', style: TextStyle(color: Colors.red)),
+                ),
+              ),
+            ],
+            // This sets the icon for the menu button (the three dots)
+            icon: const Icon(Icons.more_vert),
+          ),
         ],
       ),
+
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToCreateTask,
         child: const Icon(Icons.add),
