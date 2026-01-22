@@ -29,7 +29,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   int? _selectedProjectId;
   int? _selectedTypeId;
   int? _selectedPriorityId;
-  List<int> _selectedUserIds = [];
+  final List<int> _selectedUserIds = [];
 
   bool _isLoading = false;
 
@@ -199,7 +199,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                 children: [
                   // -------- PROJECT --------
                   DropdownButtonFormField<int>(
-                    value: _selectedProjectId,
+                    initialValue: _selectedProjectId,
                     decoration: const InputDecoration(
                       labelText: 'Project',
                       border: OutlineInputBorder(),
@@ -246,7 +246,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<int>(
-                          value: _selectedTypeId,
+                          initialValue: _selectedTypeId,
                           decoration: const InputDecoration(
                             labelText: 'Type',
                             border: OutlineInputBorder(),
@@ -266,7 +266,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: DropdownButtonFormField<int>(
-                          value: _selectedPriorityId,
+                          initialValue: _selectedPriorityId,
                           decoration: const InputDecoration(
                             labelText: 'Priority',
                             border: OutlineInputBorder(),

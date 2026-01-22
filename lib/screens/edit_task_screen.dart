@@ -238,7 +238,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   DropdownButtonFormField<int>(
-                    value: _selectedProjectId,
+                    initialValue: _selectedProjectId,
                     hint: const Text('Select a Project'),
                     decoration: const InputDecoration(
                       labelText: 'Project',
@@ -279,7 +279,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<int>(
-                          value: _selectedTypeId,
+                          initialValue: _selectedTypeId,
                           hint: const Text('Type'),
                           decoration: const InputDecoration(
                             labelText: 'Type',
@@ -300,7 +300,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: DropdownButtonFormField<int>(
-                          value: _selectedPriorityId,
+                          initialValue: _selectedPriorityId,
                           hint: const Text('Priority'),
                           decoration: const InputDecoration(
                             labelText: 'Priority',

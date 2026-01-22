@@ -1,5 +1,5 @@
 // lib/models/task.dart
-import 'package:ruko_mobile_app/models/user.dart'; // Use your project name
+// Use your project name
 
 // In lib/models/task.dart
 
