@@ -29,10 +29,16 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (token != null) {
       // If token exists, go to the main app screen
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const TaskListScreen()));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const TaskListScreen()),
+      );
     } else {
       // If no token, go to the login screen
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
     }
   }
 

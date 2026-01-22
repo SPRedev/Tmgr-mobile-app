@@ -21,7 +21,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   String _formatTimestamp(int timestamp) {
     final dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
-    return DateFormat.yMMMd().add_jm().format(dateTime); // e.g., "Jan 7, 2026, 3:55 PM"
+    return DateFormat.yMMMd().add_jm().format(
+      dateTime,
+    ); // e.g., "Jan 7, 2026, 3:55 PM"
   }
 
   @override

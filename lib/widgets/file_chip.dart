@@ -6,11 +6,7 @@ class FileChip extends StatelessWidget {
   final String filename;
   final VoidCallback onTap;
 
-  const FileChip({
-    super.key,
-    required this.filename,
-    required this.onTap,
-  });
+  const FileChip({super.key, required this.filename, required this.onTap});
 
   // Helper to get a relevant icon based on file extension
   IconData _getFileIcon(String filename) {
@@ -61,7 +57,11 @@ class FileChip extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            const Icon(Icons.download_for_offline_outlined, color: AppColors.textSecondary, size: 22),
+            const Icon(
+              Icons.download_for_offline_outlined,
+              color: AppColors.textSecondary,
+              size: 22,
+            ),
           ],
         ),
       ),
