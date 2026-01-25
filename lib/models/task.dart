@@ -18,6 +18,7 @@ class Task {
   final String statusName;
   final String priorityName;
   final List<AssignedUser> assignedTo;
+  final String creatorName;
 
   Task({
     required this.id,
@@ -27,6 +28,7 @@ class Task {
     required this.statusName,
     required this.priorityName,
     required this.assignedTo,
+    required this.creatorName,
   });
 
   // The factory constructor is now resilient to nulls and incorrect data types from the API.
@@ -50,6 +52,7 @@ class Task {
       projectName: json['project_name'] ?? 'No Project',
       statusName: json['status_name'] ?? 'N/A',
       priorityName: json['priority_name'] ?? 'N/A',
+      creatorName: json['creator_name'] ?? 'Unknown',
 
       // Assign the safely processed list.
       assignedTo: assignedToList,

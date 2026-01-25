@@ -9,8 +9,7 @@ class TaskCard extends StatelessWidget {
 
   const TaskCard({super.key, required this.task});
 
-  // Helper to get the color for the priority.
-  // Now safely handles null or unexpected strings by using a lowercase comparison.
+  // ... (your _getPriorityColor and _getStatusColor methods remain unchanged)
   Color _getPriorityColor(String? priorityName) {
     switch (priorityName?.toLowerCase()) {
       case 'urgent':
@@ -24,8 +23,6 @@ class TaskCard extends StatelessWidget {
     }
   }
 
-  // Helper to get the color for the status.
-  // Now safely handles null or unexpected strings.
   Color _getStatusColor(String? statusName) {
     switch (statusName?.toLowerCase()) {
       case 'ouvert': // French for 'Open'
@@ -46,8 +43,6 @@ class TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // --- Safe Data Extraction ---
-    // Extract all data from the 'task' object at the beginning of the build method.
-    // This provides default values and prevents null errors throughout the widget.
     final String projectName = task.projectName.isNotEmpty
         ? task.projectName
         : 'No Project';
@@ -59,7 +54,11 @@ class TaskCard extends StatelessWidget {
         ? task.priorityName
         : 'N/A';
 
-    // Safely join the list of assigned users' usernames.
+    // ✅ NEW: Safely extract creator name
+    final String creatorName = task.creatorName.isNotEmpty
+        ? task.creatorName
+        : 'Unknown';
+
     final String assignedUsers = task.assignedTo
         .map((u) => u.username)
         .join(', ');
@@ -69,7 +68,7 @@ class TaskCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 1, // Add a subtle elevation for better depth.
+      elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -130,13 +129,38 @@ class TaskCard extends StatelessWidget {
                 ),
               ],
             ),
+
+            // ✅ --- ADDED CREATOR INFO ---
+            const SizedBox(height: 8), // Add some space
+            Row(
+              children: [
+                const Icon(
+                  Icons
+                      .person_outline, // A different icon to distinguish from 'group'
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Created by $creatorName', // Display the creator's name
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            // --- END OF ADDED SECTION ---
           ],
         ),
       ),
     );
   }
 
-  // Helper widget to build the colored tags for status and priority.
+  // ... (_buildTag method remains unchanged)
   Widget _buildTag(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

@@ -233,6 +233,7 @@ class ApiService {
     try {
       final token = await _getToken();
       if (token == null) throw Exception('Not authenticated');
+
       final response = await http.get(
         Uri.parse('$_baseUrl/notifications'),
         headers: {
@@ -240,10 +241,39 @@ class ApiService {
           'Authorization': 'Bearer $token',
         },
       );
+
       if (response.statusCode == 200) {
+        // The backend returns a list of notifications.
         return jsonDecode(response.body);
       } else {
-        throw Exception('Failed to load notifications');
+        // Handle potential server errors
+        throw Exception(
+          'Failed to load notifications. Status: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<void> deleteNotification(int notificationId) async {
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception('Not authenticated');
+
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/notifications/$notificationId'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      // A 204 No Content response is the expected success signal for a DELETE request.
+      if (response.statusCode != 204) {
+        throw Exception(
+          'Failed to delete notification on server. Status: ${response.statusCode}',
+        );
       }
     } catch (e) {
       throw _handleError(e);
