@@ -1,4 +1,5 @@
 // lib/widgets/task_card.dart
+
 import 'package:flutter/material.dart';
 import 'package:ruko_mobile_app/main.dart'; // To access AppColors
 import 'package:ruko_mobile_app/models/task.dart';
@@ -8,33 +9,35 @@ class TaskCard extends StatelessWidget {
 
   const TaskCard({super.key, required this.task});
 
-  // Helper to get the color for the priority
-  Color _getPriorityColor(String priorityName) {
-    switch (priorityName.toLowerCase()) {
+  // Helper to get the color for the priority.
+  // Now safely handles null or unexpected strings by using a lowercase comparison.
+  Color _getPriorityColor(String? priorityName) {
+    switch (priorityName?.toLowerCase()) {
       case 'urgent':
         return AppColors.urgentPriority;
-      case 'élevé':
+      case 'élevé': // French for 'High'
         return AppColors.highPriority;
-      case 'moyen':
+      case 'moyen': // French for 'Medium'
         return AppColors.mediumPriority;
       default:
         return AppColors.textSecondary;
     }
   }
 
-  // Helper to get the color for the status
-  Color _getStatusColor(String statusName) {
-    switch (statusName.toLowerCase()) {
-      case 'ouvert':
+  // Helper to get the color for the status.
+  // Now safely handles null or unexpected strings.
+  Color _getStatusColor(String? statusName) {
+    switch (statusName?.toLowerCase()) {
+      case 'ouvert': // French for 'Open'
         return AppColors.statusOpen;
-      case 'terminé':
+      case 'terminé': // French for 'Done'
         return AppColors.statusDone;
-      case 'en attente':
-        return AppColors.highPriority; // Orange for 'Waiting'
-      case 'nouveau':
-        return Colors.grey.shade600; // Grey for 'New'
-      case 'problème':
-        return AppColors.urgentPriority; // Red for 'Problem'
+      case 'en attente': // French for 'Waiting'
+        return AppColors.highPriority;
+      case 'nouveau': // French for 'New'
+        return Colors.grey.shade600;
+      case 'problème': // French for 'Problem'
+        return AppColors.urgentPriority;
       default:
         return AppColors.textSecondary;
     }
@@ -42,17 +45,40 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final assignedUsers = task.assignedTo.map((u) => u.username).join(', ');
+    // --- Safe Data Extraction ---
+    // Extract all data from the 'task' object at the beginning of the build method.
+    // This provides default values and prevents null errors throughout the widget.
+    final String projectName = task.projectName.isNotEmpty
+        ? task.projectName
+        : 'No Project';
+    final String taskName = task.name.isNotEmpty ? task.name : 'Unnamed Task';
+    final String statusName = task.statusName.isNotEmpty
+        ? task.statusName
+        : 'N/A';
+    final String priorityName = task.priorityName.isNotEmpty
+        ? task.priorityName
+        : 'N/A';
+
+    // Safely join the list of assigned users' usernames.
+    final String assignedUsers = task.assignedTo
+        .map((u) => u.username)
+        .join(', ');
+    final String displayAssignedUsers = assignedUsers.isNotEmpty
+        ? assignedUsers
+        : 'Unassigned';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 1, // Add a subtle elevation for better depth.
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // --- Project Name ---
             Text(
-              task.projectName.toUpperCase(),
+              projectName.toUpperCase(),
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -61,8 +87,10 @@ class TaskCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
+
+            // --- Task Name ---
             Text(
-              task.name,
+              taskName,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -70,19 +98,18 @@ class TaskCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
+
+            // --- Tags ---
             Row(
               children: [
-                // Use the new status color helper
-                _buildTag(task.statusName, _getStatusColor(task.statusName)),
+                _buildTag(statusName, _getStatusColor(statusName)),
                 const SizedBox(width: 8),
-                // Priority tag
-                _buildTag(
-                  task.priorityName,
-                  _getPriorityColor(task.priorityName),
-                ),
+                _buildTag(priorityName, _getPriorityColor(priorityName)),
               ],
             ),
             const Divider(height: 24, thickness: 0.5),
+
+            // --- Assigned Users ---
             Row(
               children: [
                 const Icon(
@@ -93,7 +120,7 @@ class TaskCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    assignedUsers.isNotEmpty ? assignedUsers : 'Unassigned',
+                    displayAssignedUsers,
                     style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 14,
@@ -109,12 +136,12 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  // Helper widget to build the colored tags
+  // Helper widget to build the colored tags for status and priority.
   Widget _buildTag(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withAlpha((255 * 0.15).round()),
+        color: color.withAlpha((255 * 0.15).round()), // 15% opacity
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

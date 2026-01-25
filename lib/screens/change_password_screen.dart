@@ -11,33 +11,34 @@ class ChangePasswordScreen extends StatefulWidget {
 }
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
-  // A GlobalKey to identify our form and manage its state.
   final _formKey = GlobalKey<FormState>();
-
-  // Controllers to read the text from the input fields.
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmationController = TextEditingController();
-
-  // An instance of our ApiService to make the network call.
   final _apiService = ApiService();
 
-  // State variables to manage the UI.
-  bool _isLoading = false;
+  // A single state variable to manage the different states of the screen.
+  // This is more robust than using a simple boolean like _isLoading.
+  var _buttonState = _ButtonState.idle;
+
   bool _isCurrentPasswordObscured = true;
   bool _isNewPasswordObscured = true;
   bool _isConfirmationObscured = true;
 
-  // This function contains the logic to call the API.
+  // The main submission logic.
   Future<void> _submitChangePassword() async {
+    // Prevent multiple submissions while a request is in progress.
+    if (_buttonState == _ButtonState.loading) return;
+
     // First, validate the form fields (e.g., check if they are empty).
-    if (!_formKey.currentState!.validate()) {
+    // The '!' is safe here because we check for null before returning.
+    if (_formKey.currentState?.validate() != true) {
       return; // If validation fails, do nothing.
     }
 
-    // Set the loading state to true to show a progress indicator.
+    // Set the loading state to true to show a progress indicator and disable the button.
     setState(() {
-      _isLoading = true;
+      _buttonState = _ButtonState.loading;
     });
 
     try {
@@ -48,34 +49,41 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         newPasswordConfirmation: _confirmationController.text,
       );
 
-      // If the API call was successful...
+      // If the API call was successful and the widget is still on screen...
       if (success && mounted) {
+        // Show a success message.
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Password changed successfully!'),
             backgroundColor: Colors.green,
           ),
         );
-        // Go back to the previous screen.
-        Navigator.of(context).pop();
+        // Pop the screen after a short delay to allow the user to see the message.
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+        });
       }
     } catch (e) {
       // If the API call failed (e.g., wrong password, network error)...
       if (mounted) {
+        // Show a user-friendly error message from the exception.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Error: ${e.toString().replaceFirst("Exception: ", "")}',
+              // The ApiService now provides clean error messages.
+              e.toString().replaceFirst("Exception: ", ""),
             ),
             backgroundColor: Colors.red,
           ),
         );
       }
     } finally {
-      // No matter what happens, set the loading state back to false.
+      // No matter what happens, set the state back to idle if the widget is still mounted.
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _buttonState = _ButtonState.idle;
         });
       }
     }
@@ -83,7 +91,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   @override
   void dispose() {
-    // Clean up the controllers when the widget is removed.
+    // Clean up the controllers when the widget is removed from the widget tree.
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmationController.dispose();
@@ -103,7 +111,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         child: Form(
           key: _formKey,
           child: ListView(
-            // Use ListView to prevent overflow on smaller screens
             children: [
               // --- Current Password Field ---
               TextFormField(
@@ -200,27 +207,48 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               const SizedBox(height: 24),
 
               // --- Submit Button ---
-              _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ElevatedButton(
-                      onPressed: _submitChangePassword,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Update Password',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
+              // This widget builds the button based on the current state.
+              _buildSubmitButton(),
             ],
           ),
         ),
       ),
     );
   }
+
+  // A helper widget to build the button, keeping the main build method clean.
+  Widget _buildSubmitButton() {
+    if (_buttonState == _ButtonState.loading) {
+      // Show a loading indicator inside a disabled button.
+      return ElevatedButton(
+        onPressed: null, // A null onPressed callback disables the button.
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          backgroundColor: Colors.grey,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: const SizedBox(
+          height: 24,
+          width: 24,
+          child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white),
+        ),
+      );
+    }
+
+    // Show the standard button.
+    return ElevatedButton(
+      onPressed: _submitChangePassword,
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      child: const Text('Update Password', style: TextStyle(fontSize: 16)),
+    );
+  }
 }
+
+// An enum to represent the possible states of the submit button/form.
+// This is more descriptive and less error-prone than using a boolean.
+enum _ButtonState { idle, loading }

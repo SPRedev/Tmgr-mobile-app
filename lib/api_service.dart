@@ -1,15 +1,33 @@
 // lib/api_service.dart
 import 'dart:convert';
+import 'dart:io'; // Used for SocketException
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:ruko_mobile_app/models/task.dart';
+import 'package:ruko_mobile_app/models/task.dart'; // Assuming Task.fromJson is updated for safe parsing
 
 class ApiService {
-  static const String _baseUrl = 'http://192.168.100.11/larapi/public/api';
+  static const String _baseUrl = 'https://api.sarlpro.com/api';
   final _storage = const FlutterSecureStorage();
 
   Future<String?> _getToken() async {
     return await _storage.read(key: 'api_token');
+  }
+
+  // Helper method to handle common API exceptions
+  Exception _handleError(dynamic e) {
+    print('API Error: ${e.toString()}');
+    if (e is SocketException) {
+      return Exception(
+        'Failed to connect to the server. Please check your network connection.',
+      );
+    }
+    // This will catch CORS issues in a web environment, which often manifest as ClientException
+    if (e.toString().contains('XMLHttpRequest error')) {
+      return Exception(
+        'A network error occurred. This may be a CORS issue. Please contact support.',
+      );
+    }
+    return Exception('An unexpected error occurred: ${e.toString()}');
   }
 
   Future<bool> login(String email, String password) async {
@@ -31,155 +49,209 @@ class ApiService {
       }
       return false;
     } catch (e) {
-      print('Login Error: ${e.toString()}');
-      return false;
+      throw _handleError(e);
     }
   }
 
   Future<Map<String, dynamic>> getCreateTaskFormData() async {
-    final token = await _getToken();
-    if (token == null) throw Exception('Not authenticated');
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception('Not authenticated');
 
-    final response = await http.get(
-      Uri.parse('$_baseUrl/form-data/create-task'),
-      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
-    );
+      final response = await http.get(
+        Uri.parse('$_baseUrl/form-data/create-task'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load form data');
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to load form data');
+      }
+    } catch (e) {
+      throw _handleError(e);
     }
   }
 
   Future<void> createTask(Map<String, dynamic> taskData) async {
-    final token = await _getToken();
-    if (token == null) throw Exception('Not authenticated');
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception('Not authenticated');
 
-    final response = await http.post(
-      Uri.parse('$_baseUrl/tasks'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode(taskData),
-    );
+      final response = await http.post(
+        Uri.parse('$_baseUrl/tasks'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(taskData),
+      );
 
-    if (response.statusCode != 201) {
-      print('Failed to create task. Status: ${response.statusCode}');
-      print('Body: ${response.body}');
-      throw Exception('Failed to create task. Check console for details.');
+      if (response.statusCode != 201) {
+        print('Failed to create task. Status: ${response.statusCode}');
+        print('Body: ${response.body}');
+        throw Exception('Failed to create task. Check console for details.');
+      }
+    } catch (e) {
+      throw _handleError(e);
     }
   }
 
-  // ✅ --- NEW: UPDATE A TASK ---
   Future<void> updateTask(int taskId, Map<String, dynamic> taskData) async {
-    final token = await _getToken();
-    if (token == null) throw Exception('Not authenticated');
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception('Not authenticated');
 
-    final response = await http.put(
-      Uri.parse('$_baseUrl/tasks/$taskId'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode(taskData),
-    );
+      final response = await http.put(
+        Uri.parse('$_baseUrl/tasks/$taskId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(taskData),
+      );
 
-    if (response.statusCode != 200) {
-      print('Failed to update task. Status: ${response.statusCode}');
-      print('Body: ${response.body}');
-      throw Exception('Failed to update task. Check console for details.');
+      if (response.statusCode != 200) {
+        print('Failed to update task. Status: ${response.statusCode}');
+        print('Body: ${response.body}');
+        throw Exception('Failed to update task. Check console for details.');
+      }
+    } catch (e) {
+      throw _handleError(e);
     }
   }
 
   Future<List<Task>> getTasks() async {
-    final token = await _getToken();
-    if (token == null) throw Exception('Not authenticated');
-    final response = await http.get(
-      Uri.parse('$_baseUrl/tasks'),
-      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
-    );
-    if (response.statusCode == 200) {
-      List<dynamic> body = jsonDecode(response.body);
-      return body.map((dynamic item) => Task.fromJson(item)).toList();
-    } else {
-      throw Exception('Failed to load tasks');
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception('Not authenticated');
+      final response = await http.get(
+        Uri.parse('$_baseUrl/tasks'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        List<dynamic> body = jsonDecode(response.body);
+        // The safe parsing logic is handled inside the Task.fromJson factory constructor
+        return body.map((dynamic item) => Task.fromJson(item)).toList();
+      } else {
+        throw Exception('Failed to load tasks');
+      }
+    } catch (e) {
+      throw _handleError(e);
     }
   }
 
   Future<Map<String, dynamic>> getTaskDetails(int taskId) async {
-    final token = await _getToken();
-    if (token == null) throw Exception('Not authenticated');
-    final response = await http.get(
-      Uri.parse('$_baseUrl/tasks/$taskId'),
-      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load task details');
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception('Not authenticated');
+      final response = await http.get(
+        Uri.parse('$_baseUrl/tasks/$taskId'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to load task details');
+      }
+    } catch (e) {
+      throw _handleError(e);
     }
   }
 
   Future<List<dynamic>> getStatuses() async {
-    final response = await http.get(Uri.parse('$_baseUrl/statuses'));
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to load statuses');
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/statuses'),
+        headers: {'Accept': 'application/json'},
+      );
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load statuses');
+      }
+    } catch (e) {
+      throw _handleError(e);
     }
   }
 
   Future<void> updateTaskStatus(int taskId, int statusId) async {
-    final token = await _getToken();
-    if (token == null) throw Exception('Not authenticated');
-    final response = await http.post(
-      Uri.parse('$_baseUrl/tasks/$taskId/update-status'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({'status_id': statusId}),
-    );
-    if (response.statusCode != 200) {
-      final errorBody = json.decode(response.body);
-      throw Exception(errorBody['message'] ?? 'Failed to update status');
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception('Not authenticated');
+      final response = await http.post(
+        Uri.parse('$_baseUrl/tasks/$taskId/update-status'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({'status_id': statusId}),
+      );
+      if (response.statusCode != 200) {
+        final errorBody = json.decode(response.body);
+        throw Exception(errorBody['message'] ?? 'Failed to update status');
+      }
+    } catch (e) {
+      throw _handleError(e);
     }
   }
 
   Future<Map<String, dynamic>> getUserInfo() async {
-    final token = await _getToken();
-    if (token == null) throw Exception('Not authenticated');
-    final response = await http.get(
-      Uri.parse('$_baseUrl/user'),
-      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load user info');
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception('Not authenticated');
+      final response = await http.get(
+        Uri.parse('$_baseUrl/user'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to load user info');
+      }
+    } catch (e) {
+      throw _handleError(e);
     }
   }
 
   Future<List<dynamic>> getNotifications() async {
-    final token = await _getToken();
-    if (token == null) throw Exception('Not authenticated');
-    final response = await http.get(
-      Uri.parse('$_baseUrl/notifications'),
-      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
-    );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load notifications');
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception('Not authenticated');
+      final response = await http.get(
+        Uri.parse('$_baseUrl/notifications'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to load notifications');
+      }
+    } catch (e) {
+      throw _handleError(e);
     }
   }
 
   Future<void> logout() async {
+    // No network call, so no try-catch needed here.
     await _storage.delete(key: 'api_token');
   }
 
@@ -187,89 +259,105 @@ class ApiService {
     int taskId,
     String description,
   ) async {
-    final token = await _getToken();
-    if (token == null) throw Exception('Not authenticated');
-    final response = await http.post(
-      Uri.parse('$_baseUrl/tasks/$taskId/comments'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({'description': description}),
-    );
-    if (response.statusCode == 201) {
-      return json.decode(response.body);
-    } else {
-      print('Failed to create comment. Status Code: ${response.statusCode}');
-      print('Server Response: ${response.body}');
-      throw Exception('Failed to create comment. Check console for details.');
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception('Not authenticated');
+      final response = await http.post(
+        Uri.parse('$_baseUrl/tasks/$taskId/comments'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({'description': description}),
+      );
+      if (response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        print('Failed to create comment. Status Code: ${response.statusCode}');
+        print('Server Response: ${response.body}');
+        throw Exception('Failed to create comment. Check console for details.');
+      }
+    } catch (e) {
+      throw _handleError(e);
     }
   }
 
   Future<void> updateComment(int commentId, String description) async {
-    final token = await _getToken();
-    if (token == null) throw Exception('Not authenticated');
-    final response = await http.put(
-      Uri.parse('$_baseUrl/comments/$commentId'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({'description': description}),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update comment.');
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception('Not authenticated');
+      final response = await http.put(
+        Uri.parse('$_baseUrl/comments/$commentId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({'description': description}),
+      );
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update comment.');
+      }
+    } catch (e) {
+      throw _handleError(e);
     }
   }
 
   Future<void> deleteComment(int commentId) async {
-    final token = await _getToken();
-    if (token == null) throw Exception('Not authenticated');
-    final response = await http.delete(
-      Uri.parse('$_baseUrl/comments/$commentId'),
-      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete comment.');
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception('Not authenticated');
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/comments/$commentId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+      if (response.statusCode != 200) {
+        throw Exception('Failed to delete comment.');
+      }
+    } catch (e) {
+      throw _handleError(e);
     }
   }
-  // In lib/api_service.dart, inside the ApiService class
 
-  // ✅ --- NEW: DELETE A TASK ---
   Future<void> deleteTask(int taskId) async {
-    final token = await _getToken();
-    if (token == null) throw Exception('Not authenticated');
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception('Not authenticated');
 
-    final response = await http.delete(
-      Uri.parse('$_baseUrl/tasks/$taskId'),
-      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
-    );
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/tasks/$taskId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
 
-    if (response.statusCode != 200) {
-      print('Failed to delete task. Status: ${response.statusCode}');
-      print('Body: ${response.body}');
-      throw Exception('Failed to delete task. Check console for details.');
+      if (response.statusCode != 200) {
+        print('Failed to delete task. Status: ${response.statusCode}');
+        print('Body: ${response.body}');
+        throw Exception('Failed to delete task. Check console for details.');
+      }
+    } catch (e) {
+      throw _handleError(e);
     }
   }
-  // In lib/api_service.dart
 
   Future<bool> changePassword({
     required String currentPassword,
     required String newPassword,
     required String newPasswordConfirmation,
   }) async {
-    final token = await _getToken();
-    if (token == null) {
-      throw Exception('User is not authenticated.');
-    }
-
-    // We will wrap only the http call in a try...catch block
-    // to handle network failures.
-    http.Response response;
     try {
-      response = await http
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('User is not authenticated.');
+      }
+
+      final response = await http
           .post(
             Uri.parse('$_baseUrl/user/manual-change-password'),
             headers: {
@@ -283,30 +371,20 @@ class ApiService {
               'new_password_confirmation': newPasswordConfirmation,
             }),
           )
-          .timeout(
-            const Duration(seconds: 15),
-          ); // Add a timeout for good measure
-    } catch (e) {
-      // This catch block now ONLY handles network errors (e.g., no internet, server down).
-      print('Change Password Network Error: ${e.toString()}');
-      throw Exception(
-        'Failed to connect to the server. Please check your connection.',
-      );
-    }
+          .timeout(const Duration(seconds: 15));
 
-    // Now, we handle the response outside the try...catch block.
-    if (response.statusCode == 200) {
-      // Success!
-      return true;
-    } else {
-      // This is an API error (e.g., wrong password, validation fail).
-      // We decode the body and throw the specific message from the server.
-      final errorBody = json.decode(response.body);
-      final errorMessage =
-          errorBody['error'] ??
-          errorBody['message'] ??
-          'An unknown error occurred.';
-      throw Exception(errorMessage);
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        final errorBody = json.decode(response.body);
+        final errorMessage =
+            errorBody['error'] ??
+            errorBody['message'] ??
+            'An unknown error occurred.';
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      throw _handleError(e);
     }
   }
 }
