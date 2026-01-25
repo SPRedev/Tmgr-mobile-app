@@ -11,6 +11,9 @@ import 'package:ruko_mobile_app/widgets/task_card.dart';
 import 'package:ruko_mobile_app/widgets/filter_chip.dart';
 import 'package:ruko_mobile_app/screens/change_password_screen.dart';
 
+// Enum to manage the screen's state, making the build method cleaner.
+enum _ScreenState { loading, error, loaded, empty }
+
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
 
@@ -18,31 +21,28 @@ class TaskListScreen extends StatefulWidget {
   State<TaskListScreen> createState() => _TaskListScreenState();
 }
 
-// Enum to manage the different states of the screen's body.
-enum _ScreenState { loading, error, loaded, empty }
-
 class _TaskListScreenState extends State<TaskListScreen> {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
 
-  // Data stores
+  // State Management
+  _ScreenState _screenState = _ScreenState.loading;
+  String _errorMessage = '';
+
+  // Data Stores
   List<Task> _allTasks = [];
   List<Task> _filteredTasks = [];
   List<dynamic> _projects = [];
   List<dynamic> _priorities = [];
 
-  // User info
+  // User Info
   String _username = '...';
   int _currentUserId = 0;
 
-  // Filter states
+  // Filter States
   int? _selectedProjectId;
   int? _selectedPriorityId;
   bool _assignedToMeOnly = false;
-
-  // State management
-  _ScreenState _screenState = _ScreenState.loading;
-  String _errorMessage = '';
 
   @override
   void initState() {
@@ -61,13 +61,12 @@ class _TaskListScreenState extends State<TaskListScreen> {
   // --- DATA & STATE LOGIC ---
 
   Future<void> _fetchData() async {
-    // Only show full-screen loader on initial fetch.
+    // Only show a full-screen loader on the very first fetch.
     if (_allTasks.isEmpty) {
       setState(() => _screenState = _ScreenState.loading);
     }
 
     try {
-      // Use Future.wait for efficient parallel fetching.
       final results = await Future.wait([
         _apiService.getTasks(),
         _apiService.getUserInfo(),
@@ -86,8 +85,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
         _currentUserId = int.tryParse(userInfo['id']?.toString() ?? '0') ?? 0;
         _projects = formData['projects'] ?? [];
         _priorities = formData['priorities'] ?? [];
-        _screenState = _ScreenState.loaded;
-        _applyAllFilters(); // Apply filters to the newly fetched data.
+        _applyAllFilters(); // Initial filter application
       });
     } catch (e) {
       if (mounted) {
@@ -101,48 +99,49 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   void _applyAllFilters() {
     final query = _searchController.text.toLowerCase();
-
-    // Start with the full list of tasks.
     List<Task> tempTasks = List.from(_allTasks);
 
-    // Apply each filter sequentially.
-    tempTasks = tempTasks.where((task) {
-      final matchesSearch =
-          query.isEmpty ||
-          task.name.toLowerCase().contains(query) ||
-          task.projectName.toLowerCase().contains(query) ||
-          task.statusName.toLowerCase().contains(query) ||
-          task.assignedTo.any(
-            (user) => user.username.toLowerCase().contains(query),
-          );
+    // Apply each filter sequentially for clarity.
+    if (query.isNotEmpty) {
+      tempTasks = tempTasks.where((task) {
+        return task.name.toLowerCase().contains(query) ||
+            task.projectName.toLowerCase().contains(query) ||
+            task.statusName.toLowerCase().contains(query) ||
+            task.assignedTo.any(
+              (user) => user.username.toLowerCase().contains(query),
+            );
+      }).toList();
+    }
 
-      final matchesProject =
-          _selectedProjectId == null || task.projectId == _selectedProjectId;
+    if (_selectedProjectId != null) {
+      tempTasks = tempTasks
+          .where((task) => task.projectId == _selectedProjectId)
+          .toList();
+    }
 
-      final matchesPriority =
-          _selectedPriorityId == null ||
-          task.priorityName ==
-              _getFilterNameById(_priorities, _selectedPriorityId);
+    if (_selectedPriorityId != null) {
+      final priorityName = _getFilterNameById(_priorities, _selectedPriorityId);
+      tempTasks = tempTasks
+          .where((task) => task.priorityName == priorityName)
+          .toList();
+    }
 
-      final matchesAssignment =
-          !_assignedToMeOnly ||
-          task.assignedTo.any((user) => user.id == _currentUserId);
-
-      return matchesSearch &&
-          matchesProject &&
-          matchesPriority &&
-          matchesAssignment;
-    }).toList();
+    if (_assignedToMeOnly) {
+      tempTasks = tempTasks
+          .where(
+            (task) => task.assignedTo.any((user) => user.id == _currentUserId),
+          )
+          .toList();
+    }
 
     setState(() {
       _filteredTasks = tempTasks;
-      // If the screen was loaded but now the filtered list is empty, update the state.
-      if (_screenState == _ScreenState.loaded &&
-          _filteredTasks.isEmpty &&
-          _allTasks.isNotEmpty) {
+      // Determine the final screen state based on the filtered results.
+      if (_allTasks.isEmpty && _screenState != _ScreenState.loading) {
         _screenState = _ScreenState.empty;
-      } else if (_screenState == _ScreenState.empty &&
-          _filteredTasks.isNotEmpty) {
+      } else if (_filteredTasks.isEmpty && _allTasks.isNotEmpty) {
+        _screenState = _ScreenState.empty;
+      } else {
         _screenState = _ScreenState.loaded;
       }
     });
@@ -166,24 +165,14 @@ class _TaskListScreenState extends State<TaskListScreen> {
     }
   }
 
-  void _navigateToCreateTask() async {
-    final bool? wasTaskCreated = await Navigator.push<bool>(
+  Future<void> _navigateTo(Widget screen) async {
+    // This generic navigation method handles refreshing data on return.
+    final bool? shouldRefresh = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (context) => const CreateTaskScreen()),
+      MaterialPageRoute(builder: (context) => screen),
     );
-    if (wasTaskCreated == true && mounted) {
-      _fetchData();
-    }
-  }
 
-  Future<void> _navigateToDetail(Task task) async {
-    final bool? wasTaskModified = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TaskDetailScreen(taskId: task.id),
-      ),
-    );
-    if (wasTaskModified == true && mounted) {
+    if (shouldRefresh == true && mounted) {
       _fetchData();
     }
   }
@@ -195,7 +184,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     return Scaffold(
       appBar: _buildAppBar(),
       floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToCreateTask,
+        onPressed: () => _navigateTo(const CreateTaskScreen()),
         child: const Icon(Icons.add),
         tooltip: 'Create Task',
       ),
@@ -217,20 +206,13 @@ class _TaskListScreenState extends State<TaskListScreen> {
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_outlined),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const NotificationScreen()),
-          ),
+          onPressed: () => _navigateTo(const NotificationScreen()),
           tooltip: 'Notifications',
         ),
         PopupMenuButton<String>(
           onSelected: (value) {
             if (value == 'change_password') {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const ChangePasswordScreen(),
-                ),
-              );
+              _navigateTo(const ChangePasswordScreen());
             } else if (value == 'logout') {
               _logout();
             }
@@ -328,6 +310,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   }
 
   Widget _buildBody() {
+    // The body is now built based on the clean _screenState enum.
     switch (_screenState) {
       case _ScreenState.loading:
         return const Center(child: CircularProgressIndicator());
@@ -349,6 +332,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
           ),
         );
       case _ScreenState.empty:
+        // A specific state for when filters result in an empty list.
         return const Center(child: Text('No tasks match your filters.'));
       case _ScreenState.loaded:
         return ListView.builder(
@@ -357,7 +341,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
           itemBuilder: (context, index) {
             final task = _filteredTasks[index];
             return InkWell(
-              onTap: () => _navigateToDetail(task),
+              onTap: () => _navigateTo(TaskDetailScreen(taskId: task.id)),
               child: TaskCard(task: task),
             );
           },

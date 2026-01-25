@@ -365,7 +365,9 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     showDialog(
       context: context,
       builder: (context) {
+        // The temporary list correctly holds integers.
         List<int> tempSelectedUserIds = List<int>.from(_selectedUserIds);
+
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
@@ -381,18 +383,31 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                         itemCount: _availableUsers.length,
                         itemBuilder: (context, index) {
                           final user = _availableUsers[index];
-                          final bool isSelected = tempSelectedUserIds.contains(
-                            user['id'],
+
+                          // ✅ --- THE FIX IS HERE ---
+                          // Safely parse the user's ID from the available list to ensure
+                          // we are comparing an integer with our list of integer IDs.
+                          final int? currentUserId = int.tryParse(
+                            user['id']?.toString() ?? '',
                           );
+
+                          // Now, the 'contains' check will work correctly.
+                          final bool isSelected =
+                              currentUserId != null &&
+                              tempSelectedUserIds.contains(currentUserId);
+
                           return CheckboxListTile(
-                            title: Text(user['username']),
+                            title: Text(user['username'] ?? 'Unknown User'),
                             value: isSelected,
                             onChanged: (bool? checked) {
+                              // Ensure we only add/remove valid integer IDs.
+                              if (currentUserId == null) return;
+
                               setDialogState(() {
                                 if (checked == true) {
-                                  tempSelectedUserIds.add(user['id']);
+                                  tempSelectedUserIds.add(currentUserId);
                                 } else {
-                                  tempSelectedUserIds.remove(user['id']);
+                                  tempSelectedUserIds.remove(currentUserId);
                                 }
                               });
                             },
