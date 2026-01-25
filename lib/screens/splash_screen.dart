@@ -58,30 +58,32 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // A more visually appealing splash screen layout.
     return Scaffold(
-      backgroundColor: Theme.of(
-        context,
-      ).primaryColor, // Use a brand color for the background.
+      backgroundColor: Theme.of(context).primaryColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // You can replace this with your app's logo.
+            // Your app's logo icon
             const Icon(
-              Icons.task_alt, // Example icon
+              Icons
+                  .task_alt, // You can change this to a more fitting icon if you like
               size: 80,
               color: Colors.white,
             ),
             const SizedBox(height: 24),
+
+            // ✅ THIS IS THE CHANGED LINE
             const Text(
-              "Ruko Mobile", // Your app's name
+              "AC TMGR", // Changed from "Ruko Mobile"
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
+                letterSpacing: 1.2, // Added for a more modern, spaced-out look
               ),
             ),
+
             const SizedBox(height: 40),
             const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),

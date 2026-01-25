@@ -83,10 +83,14 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // ✅ THIS IS THE UPDATED APPBAR
       appBar: AppBar(
-        title: const Text('User Login'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
+        title: const Text('Welcome Back'), // Changed from 'User Login'
+        centerTitle: true, // Centering the title often looks more modern
+        backgroundColor: Theme.of(context).primaryColor, // Use the dark teal
+        foregroundColor: Colors.white, // Set ALL text and icons to white
+      
+        elevation: 0, // A flat AppBar can also feel more modern
       ),
       body: Center(
         child: SingleChildScrollView(

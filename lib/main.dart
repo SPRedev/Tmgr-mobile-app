@@ -11,26 +11,39 @@ class AppColors {
   AppColors._();
 
   // --- Brand & Core Colors ---
-  static const Color primary = Color(
-    0xFF6C63FF,
-  ); // Vibrant purple for primary actions
+  // A deep, strong teal from the darker part of your logo. Excellent for primary elements.
+  static const Color primary = Color(0xFF0D5D6E);
+
+  // A lighter, vibrant cyan from the logo, perfect for accents or highlights.
+  static const Color secondary = Color(0xFF25A4A6);
+
   static const Color background = Color(
     0xFFF5F5F7,
-  ); // A slightly off-white for less glare
+  ); // A clean, neutral background
   static const Color cardBackground = Color(0xFFFFFFFF);
 
   // --- Text Colors ---
-  static const Color textPrimary = Color(0xFF333333);
-  static const Color textSecondary = Color(0xFF676767);
+  static const Color textPrimary = Color(0xFF212121); // A slightly softer black
+  static const Color textSecondary = Color(
+    0xFF757575,
+  ); // A standard grey for subtitles
 
-  // --- Semantic Colors for Priorities ---
-  static const Color urgentPriority = Color(0xFFE2445C); // Red
-  static const Color highPriority = Color(0xFFFDAB3D); // Orange
-  static const Color mediumPriority = Color(0xFF00C875); // Green
+  // --- Semantic Colors (chosen to complement the new teal theme) ---
+  static const Color urgentPriority = Color(
+    0xFFD32F2F,
+  ); // A deep red for 'Urgent'
+  static const Color highPriority = Color(
+    0xFFFFA000,
+  ); // A strong amber for 'High'
+  static const Color mediumPriority = Color(
+    0xFF388E3C,
+  ); // A clear green for 'Medium'
 
   // --- Semantic Colors for Statuses ---
-  static const Color statusOpen = Color(0xFF0073EA); // Blue
-  static const Color statusDone = Color(0xFF00C875); // Green
+  static const Color statusOpen = Color(
+    0xFF1976D2,
+  ); // A standard blue for 'Open'
+  static const Color statusDone = Color(0xFF388E3C); // A clear green for 'Done'
 }
 
 void main() {
