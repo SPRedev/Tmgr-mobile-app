@@ -4,9 +4,12 @@ import 'dart:io'; // Used for SocketException
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ruko_mobile_app/models/task.dart'; // Assuming Task.fromJson is updated for safe parsing
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ApiService {
   static const String _baseUrl = 'https://api.sarlpro.com/api';
+  // static const String _baseUrl = 'http://localhost/tmgr/api/public/api';
   final _storage = const FlutterSecureStorage();
 
   Future<String?> _getToken() async {
@@ -76,7 +79,8 @@ class ApiService {
     }
   }
 
-  Future<void> createTask(Map<String, dynamic> taskData) async {
+  Future<int> createTask(Map<String, dynamic> taskData) async {
+    // Changed return type to Future<int>
     try {
       final token = await _getToken();
       if (token == null) throw Exception('Not authenticated');
@@ -91,7 +95,11 @@ class ApiService {
         body: json.encode(taskData),
       );
 
-      if (response.statusCode != 201) {
+      if (response.statusCode == 201) {
+        // ✅ PARSE AND RETURN THE NEW TASK ID
+        final responseBody = json.decode(response.body);
+        return responseBody['task_id'];
+      } else {
         print('Failed to create task. Status: ${response.statusCode}');
         print('Body: ${response.body}');
         throw Exception('Failed to create task. Check console for details.');
@@ -415,6 +423,55 @@ class ApiService {
       }
     } catch (e) {
       throw _handleError(e);
+    }
+  }
+
+  Future<void> uploadAttachment(int taskId, PlatformFile file) async {
+    try {
+      final token = await _getToken();
+      if (token == null) throw Exception('Not authenticated');
+
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_baseUrl/tasks/$taskId/attachments'),
+      );
+
+      request.headers['Authorization'] = 'Bearer $token';
+      request.headers['Accept'] = 'application/json';
+
+      // ✅ --- THE FIX IS HERE ---
+      // Conditionally create the MultipartFile based on the platform.
+      http.MultipartFile multipartFile;
+
+      if (kIsWeb) {
+        // For web, use `fromBytes` with the file's byte data.
+        multipartFile = http.MultipartFile.fromBytes(
+          'attachment', // This field name must match your Laravel API
+          file.bytes!,
+          filename: file.name,
+        );
+      } else {
+        // For mobile (iOS/Android), use `fromPath` with the file's path.
+        multipartFile = await http.MultipartFile.fromPath(
+          'attachment', // This field name must match your Laravel API
+          file.path!,
+          filename: file.name,
+        );
+      }
+
+      // Add the correctly created file to the request.
+      request.files.add(multipartFile);
+
+      final response = await request.send();
+
+      if (response.statusCode != 201) {
+        final responseBody = await response.stream.bytesToString();
+        print('Failed to upload file. Status: ${response.statusCode}');
+        print('Body: $responseBody');
+        throw Exception('Failed to upload file: ${file.name}');
+      }
+    } catch (e) {
+      throw Exception('Failed to upload ${file.name}: ${e.toString()}');
     }
   }
 }

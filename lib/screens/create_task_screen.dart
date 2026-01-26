@@ -2,9 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:ruko_mobile_app/api_service.dart';
-// Assuming AppColors is defined in your main.dart or a theme file.
-// If not, replace AppColors.primary with Theme.of(context).primaryColor.
-import 'package:ruko_mobile_app/main.dart';
+import 'package:ruko_mobile_app/main.dart'; // For AppColors
+import 'package:file_picker/file_picker.dart';
 
 class CreateTaskScreen extends StatefulWidget {
   const CreateTaskScreen({super.key});
@@ -39,6 +38,10 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   int? _selectedPriorityId;
   final List<int> _selectedUserIds = [];
 
+  // ✅ FIX 1: The _selectedFiles list MUST be inside the State class.
+  // It was previously a global variable, which can cause state management issues.
+  final List<PlatformFile> _selectedFiles = [];
+
   // Use the enum for clearer state management.
   var _submitState = _SubmitState.idle;
 
@@ -61,8 +64,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   void _onProjectChanged(int? projectId) {
     if (projectId == null || projectId == _selectedProjectId) return;
 
-    // Find the full project data from the list.
-    // Use try-firstWhere to avoid exceptions if not found.
     final project = _projects.firstWhere(
       (p) => p['id'] == projectId,
       orElse: () => null,
@@ -70,21 +71,33 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
 
     setState(() {
       _selectedProjectId = projectId;
-      // Safely access the 'users' list, defaulting to an empty list if null.
       _availableUsers = project?['users'] ?? [];
-      // Clear previously selected users as they belong to the old project.
       _selectedUserIds.clear();
     });
   }
 
-  Future<void> _submitForm() async {
-    // Prevent multiple submissions.
-    if (_submitState == _SubmitState.loading) return;
+  Future<void> _pickFiles() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+      );
 
-    // Validate the form. Use null-safe check.
-    if (_formKey.currentState?.validate() != true) {
-      return;
+      if (result != null) {
+        setState(() {
+          _selectedFiles.addAll(result.files);
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking files: ${e.toString()}')),
+      );
     }
+  }
+
+  Future<void> _submitForm() async {
+    if (_submitState == _SubmitState.loading) return;
+    if (_formKey.currentState?.validate() != true) return;
 
     setState(() => _submitState = _SubmitState.loading);
 
@@ -98,7 +111,17 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     };
 
     try {
-      await _apiService.createTask(taskData);
+      final newTaskId = await _apiService.createTask(taskData);
+
+      if (_selectedFiles.isNotEmpty) {
+        for (var file in _selectedFiles) {
+          try {
+            await _apiService.uploadAttachment(newTaskId, file);
+          } catch (e) {
+            print('Failed to upload ${file.name}: $e');
+          }
+        }
+      }
 
       if (!mounted) return;
 
@@ -109,12 +132,9 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         ),
       );
 
-      // Pop with a 'true' result to let the previous screen know it should refresh.
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-
-      // Use the clean error message from our resilient ApiService.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -143,12 +163,10 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       body: FutureBuilder<Map<String, dynamic>>(
         future: _formDataFuture,
         builder: (context, snapshot) {
-          // Handle loading state
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // Handle error state with a user-friendly message and a retry button.
           if (snapshot.hasError) {
             return Center(
               child: Padding(
@@ -163,7 +181,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        // Retry fetching the data.
                         setState(() {
                           _formDataFuture = _apiService.getCreateTaskFormData();
                         });
@@ -176,24 +193,25 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
             );
           }
 
-          // Handle no data state
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(child: Text('Could not load form data.'));
           }
 
-          // On success, populate data lists and build the form.
-          // This is safer than assigning in the build method directly.
+          // ✅ FIX 2: Assign data here, just once, before building the form.
+          // This is safer and more efficient than doing it inside the build method.
           _projects = snapshot.data!['projects'] ?? [];
           _taskTypes = snapshot.data!['task_types'] ?? [];
           _priorities = snapshot.data!['priorities'] ?? [];
 
+          // ✅ FIX 3: Return the single, correctly structured _buildForm method.
           return _buildForm();
         },
       ),
     );
   }
 
-  // The main form widget, extracted for clarity.
+  // ✅ FIX 4: There should only be ONE _buildForm method.
+  // The duplicated one has been removed.
   Widget _buildForm() {
     return Form(
       key: _formKey,
@@ -293,9 +311,11 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
             const SizedBox(height: 16),
 
             // --- Assign Users Button ---
-            // This button only appears after a project is selected.
             if (_selectedProjectId != null) _buildAssignUsersButton(),
+            const SizedBox(height: 16),
 
+            // --- ATTACHMENTS SECTION ---
+            _buildAttachmentsSection(),
             const SizedBox(height: 32),
 
             // --- Submit Button ---
@@ -306,15 +326,11 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     );
   }
 
-  // Widget for the "Assign Users" button, extracted for clarity.
   Widget _buildAssignUsersButton() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Assign To',
-          style: Theme.of(context).textTheme.bodySmall, // More standard styling
-        ),
+        Text('Assign To', style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 4),
         OutlinedButton.icon(
           icon: const Icon(Icons.person_add_alt_1_outlined),
@@ -333,12 +349,45 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     );
   }
 
-  // Widget for the main submit button, handles loading state.
+  Widget _buildAttachmentsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Attachments', style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 4),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.attach_file),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            textStyle: const TextStyle(fontSize: 16),
+          ),
+          onPressed: _pickFiles,
+          label: const Text('Add Files'),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8.0,
+          runSpacing: 4.0,
+          children: _selectedFiles.map((file) {
+            return Chip(
+              label: Text(file.name, style: const TextStyle(fontSize: 12)),
+              onDeleted: () {
+                setState(() {
+                  _selectedFiles.remove(file);
+                });
+              },
+              deleteIcon: const Icon(Icons.close, size: 16),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSubmitButton() {
     bool isLoading = _submitState == _SubmitState.loading;
 
     return ElevatedButton(
-      // Disable the button when loading.
       onPressed: isLoading ? null : _submitForm,
       style: ElevatedButton.styleFrom(
         backgroundColor: isLoading
@@ -360,11 +409,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     );
   }
 
-  // --- DIALOGS ---
-
   void _showUserSelectionDialog() {
-    // This dialog is complex and stateful, so it remains mostly unchanged.
-    // The logic here is sound.
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -404,7 +449,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                 TextButton(
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
-                    // Trigger a rebuild of the main screen to update the user count label.
                     setState(() {});
                   },
                   child: const Text('Done'),
