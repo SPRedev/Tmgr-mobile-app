@@ -10,6 +10,7 @@ import 'package:ruko_mobile_app/screens/task_detail_screen.dart';
 import 'package:ruko_mobile_app/widgets/task_card.dart';
 import 'package:ruko_mobile_app/widgets/filter_chip.dart';
 import 'package:ruko_mobile_app/screens/change_password_screen.dart';
+import 'package:badges/badges.dart' as badges;
 
 // Enum to manage the screen's state, making the build method cleaner.
 enum _ScreenState { loading, error, loaded, empty }
@@ -34,6 +35,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   List<Task> _filteredTasks = [];
   List<dynamic> _projects = [];
   List<dynamic> _priorities = [];
+  int _notificationCount = 0;
 
   // User Info
   String _username = '...';
@@ -71,6 +73,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
         _apiService.getTasks(),
         _apiService.getUserInfo(),
         _apiService.getCreateTaskFormData(),
+        _apiService.getNotifications(),
       ]);
 
       if (!mounted) return;
@@ -78,6 +81,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
       final tasks = results[0] as List<Task>;
       final userInfo = results[1] as Map<String, dynamic>;
       final formData = results[2] as Map<String, dynamic>;
+      final notifications = results[3] as List<dynamic>;
 
       setState(() {
         _allTasks = tasks;
@@ -85,6 +89,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
         _currentUserId = int.tryParse(userInfo['id']?.toString() ?? '0') ?? 0;
         _projects = formData['projects'] ?? [];
         _priorities = formData['priorities'] ?? [];
+        _notificationCount = notifications.length;
         _applyAllFilters(); // Initial filter application
       });
     } catch (e) {
@@ -204,11 +209,26 @@ class _TaskListScreenState extends State<TaskListScreen> {
     return AppBar(
       title: Text('Tasks for $_username'),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined),
-          onPressed: () => _navigateTo(const NotificationScreen()),
-          tooltip: 'Notifications',
+        // ✅ REFACTORED: The IconButton is now wrapped with the Badge widget.
+        badges.Badge(
+          // Show the badge only if there are notifications.
+          showBadge: _notificationCount > 0,
+          // Position the badge at the top-right corner of the icon.
+          position: badges.BadgePosition.topEnd(top: 4, end: 4),
+          // The content of the badge (the number).
+          badgeContent: Text(
+            _notificationCount.toString(),
+            style: const TextStyle(color: Colors.white, fontSize: 10),
+          ),
+          // The child of the badge is your original IconButton.
+          child: IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () => _navigateTo(const NotificationScreen()),
+            tooltip: 'Notifications',
+          ),
         ),
+
+        // The PopupMenuButton remains exactly the same.
         PopupMenuButton<String>(
           onSelected: (value) {
             if (value == 'change_password') {

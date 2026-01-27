@@ -1,12 +1,18 @@
-// lib/screens/notification_screen.dart
-
 import 'package:flutter/material.dart';
-import 'package:ruko_mobile_app/api_service.dart'; // Assuming ApiService is here
+import 'package:ruko_mobile_app/api_service.dart';
 import 'package:intl/intl.dart';
 import 'package:ruko_mobile_app/screens/task_detail_screen.dart';
 
 // Enum to manage the screen's state for cleaner UI logic.
 enum _ScreenState { loading, loaded, error, empty }
+
+// Helper function remains the same, it's good practice.
+int _safeParseInt(dynamic value, {int defaultValue = 0}) {
+  if (value == null) {
+    return defaultValue;
+  }
+  return int.tryParse(value.toString()) ?? defaultValue;
+}
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -30,8 +36,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   // --- DATA HANDLING & STATE MANAGEMENT ---
 
-  /// Fetches notifications from the server.
   Future<void> _loadNotifications({bool isRefresh = false}) async {
+    // On a manual refresh, we don't need to show the full loading spinner.
     if (!isRefresh) {
       setState(() => _screenState = _ScreenState.loading);
     }
@@ -56,36 +62,34 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
-  /// ✅ ***CORRECTION 4: NEW CORE LOGIC***
-  /// Handles the entire interaction flow when a notification is tapped.
   void _handleNotificationTap(int index) {
     final notification = _notifications[index];
-    final int? taskId = int.tryParse(notification['task_id']?.toString() ?? '');
-    final int notificationId = notification['id'];
 
-    if (taskId == null) {
+    // FIX: Use the _safeParseInt helper function here.
+    // The original code `int.tryParse(notification['task_id']?.toString() ?? '')`
+    // would result in `null` if the string is empty, causing an error.
+    final int taskId = _safeParseInt(notification['task_id']);
+
+    final int notificationId = _safeParseInt(notification['id']);
+
+    if (taskId == 0) {
+      // Check against 0, as that's the default for a failed parse.
       _showErrorSnackBar('This notification is not linked to a valid task.');
       return;
     }
 
-    // 1. Instantly remove the notification from the UI.
+    // The rest of your original logic is kept exactly as it was.
     setState(() {
       _notifications.removeAt(index);
-      // If the list becomes empty, update the screen state.
       if (_notifications.isEmpty) {
         _screenState = _ScreenState.empty;
       }
     });
 
-    // 2. In the background, send the delete request to the server.
     _apiService.deleteNotification(notificationId).catchError((e) {
-      // If deletion fails, we don't bother the user, but we log it for debugging.
-      // In a real app, you might want to add the notification back to the list
-      // or implement a more robust retry mechanism.
       print("Failed to delete notification $notificationId from server: $e");
     });
 
-    // 3. Immediately navigate to the Task Detail Screen.
     Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (context) => TaskDetailScreen(taskId: taskId)),
@@ -136,7 +140,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
           ),
           title: Text(name),
           subtitle: Text(_formatTimestamp(notification['date_added'])),
-          // ✅ ***CORRECTION 5: UPDATED onTap***
           onTap: () => _handleNotificationTap(index),
         );
       },
@@ -146,7 +149,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget _buildEmptyStateWidget() {
     return Center(
       child: ListView(
-        // Use ListView to allow pulling to refresh even on an empty screen
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           SizedBox(height: MediaQuery.of(context).size.height * 0.3),
@@ -189,8 +191,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   String _formatTimestamp(dynamic timestamp) {
     if (timestamp == null) return 'No date';
-    final int? ts = int.tryParse(timestamp.toString());
-    if (ts == null) return 'Invalid date';
+    final int ts = _safeParseInt(timestamp);
+    if (ts == 0) return 'Invalid date';
 
     try {
       final dateTime = DateTime.fromMillisecondsSinceEpoch(ts * 1000);

@@ -277,7 +277,7 @@ class ApiService {
         },
       );
 
-      // A 204 No Content response is the expected success signal for a DELETE request.
+      // ✅ FIX: Check for 204 (No Content) as the success status code.
       if (response.statusCode != 204) {
         throw Exception(
           'Failed to delete notification on server. Status: ${response.statusCode}',
