@@ -6,10 +6,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ruko_mobile_app/models/task.dart'; // Assuming Task.fromJson is updated for safe parsing
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class ApiService {
-  static const String _baseUrl = 'https://api.sarlpro.com/api';
-  // static const String _baseUrl = 'http://localhost/tmgr/api/public/api';
+  // static const String _baseUrl = 'https://api.sarlpro.com/api';
+  static const String _baseUrl = 'http://192.168.100.11/tmgr/api/public/api';
   final _storage = const FlutterSecureStorage();
 
   Future<String?> _getToken() async {
@@ -289,7 +290,18 @@ class ApiService {
   }
 
   Future<void> logout() async {
-    // No network call, so no try-catch needed here.
+    // First, try to delete the FCM token from the server.
+    try {
+      // We need to import firebase_messaging to get the token here.
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null) {
+        await deleteFcmToken(fcmToken);
+      }
+    } catch (e) {
+      print('Failed to get FCM token on logout: $e');
+    }
+
+    // Then, delete the local auth token to complete the logout.
     await _storage.delete(key: 'api_token');
   }
 
@@ -472,6 +484,46 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Failed to upload ${file.name}: ${e.toString()}');
+    }
+  }
+
+  Future<void> storeFcmToken(String token) async {
+    try {
+      final authToken = await _getToken();
+      if (authToken == null) return; // Don't try if not logged in
+
+      await http.post(
+        Uri.parse('$_baseUrl/fcm-tokens'),
+        headers: {
+          'Authorization': 'Bearer $authToken',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({'token': token}),
+      );
+    } catch (e) {
+      // We don't throw an error here because failing to store the token
+      // shouldn't crash the app. We just log it.
+      print('ApiService: Failed to store FCM token. Error: $e');
+    }
+  }
+
+  Future<void> deleteFcmToken(String token) async {
+    try {
+      final authToken = await _getToken();
+      if (authToken == null) return;
+
+      await http.post(
+        Uri.parse('$_baseUrl/fcm-tokens/delete'),
+        headers: {
+          'Authorization': 'Bearer $authToken',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({'token': token}),
+      );
+    } catch (e) {
+      print('ApiService: Failed to delete FCM token. Error: $e');
     }
   }
 }

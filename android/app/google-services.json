@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "2918996686",
+    "project_id": "actmgr-9b618",
+    "storage_bucket": "actmgr-9b618.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:2918996686:android:3558a2bef2782fb8054e9f",
+        "android_client_info": {
+          "package_name": "com.example.ruko_mobile_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBW7SNea884U6t6zzyCA_U3NGp3SfAJxww"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

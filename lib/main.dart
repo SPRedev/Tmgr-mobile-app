@@ -2,13 +2,19 @@
 
 import 'package:flutter/material.dart';
 import 'package:ruko_mobile_app/screens/splash_screen.dart';
+import 'package:firebase_core/firebase_core.dart'; // ✅ ADD
+import 'package:ruko_mobile_app/api/firebase_api.dart'; // ✅ ADD
+import 'firebase_options.dart';
 
 // --- AppColors Class ---
 // This class provides a centralized, static, and constant source for all theme colors.
 // Using 'const' ensures these color values are compile-time constants for performance.
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 class AppColors {
   // Private constructor to prevent instantiation of this class.
-  AppColors._();
+ 
+ AppColors._();
 
   // --- Brand & Core Colors ---
   // A deep, strong teal from the darker part of your logo. Excellent for primary elements.
@@ -46,10 +52,14 @@ class AppColors {
   static const Color statusDone = Color(0xFF388E3C); // A clear green for 'Done'
 }
 
-void main() {
-  // It's good practice to ensure Flutter bindings are initialized,
-  // especially for apps that might use platform channels before runApp.
+Future<void> main() async {
+  // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await FirebaseApi().initNotifications();
+
   runApp(const MyApp());
 }
 
@@ -59,6 +69,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      scaffoldMessengerKey: scaffoldMessengerKey,
       title: 'Ruko Mobile', // A more concise app title
       debugShowCheckedModeBanner: false,
 

@@ -1,44 +1,15 @@
 // lib/widgets/task_card.dart
 
 import 'package:flutter/material.dart';
-import 'package:ruko_mobile_app/main.dart'; // To access AppColors
+import 'package:intl/intl.dart';
+import 'package:ruko_mobile_app/main.dart';
 import 'package:ruko_mobile_app/models/task.dart';
+import 'package:ruko_mobile_app/util/color_helpers.dart';
 
 class TaskCard extends StatelessWidget {
   final Task task;
 
   const TaskCard({super.key, required this.task});
-
-  // ... (your _getPriorityColor and _getStatusColor methods remain unchanged)
-  Color _getPriorityColor(String? priorityName) {
-    switch (priorityName?.toLowerCase()) {
-      case 'urgent':
-        return AppColors.urgentPriority;
-      case 'élevé': // French for 'High'
-        return AppColors.highPriority;
-      case 'moyen': // French for 'Medium'
-        return AppColors.mediumPriority;
-      default:
-        return AppColors.textSecondary;
-    }
-  }
-
-  Color _getStatusColor(String? statusName) {
-    switch (statusName?.toLowerCase()) {
-      case 'ouvert': // French for 'Open'
-        return AppColors.statusOpen;
-      case 'terminé': // French for 'Done'
-        return AppColors.statusDone;
-      case 'en attente': // French for 'Waiting'
-        return AppColors.highPriority;
-      case 'nouveau': // French for 'New'
-        return Colors.grey.shade600;
-      case 'problème': // French for 'Problem'
-        return AppColors.urgentPriority;
-      default:
-        return AppColors.textSecondary;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,18 +24,22 @@ class TaskCard extends StatelessWidget {
     final String priorityName = task.priorityName.isNotEmpty
         ? task.priorityName
         : 'N/A';
-
-    // ✅ NEW: Safely extract creator name
     final String creatorName = task.creatorName.isNotEmpty
         ? task.creatorName
         : 'Unknown';
-
     final String assignedUsers = task.assignedTo
         .map((u) => u.username)
         .join(', ');
     final String displayAssignedUsers = assignedUsers.isNotEmpty
         ? assignedUsers
         : 'Unassigned';
+
+    // --- Color Parsing ---
+    final statusColor = hexToColor(task.statusColor, defaultColor: Colors.blue);
+    final priorityColor = hexToColor(
+      task.priorityColor,
+      defaultColor: Colors.grey,
+    );
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -101,66 +76,36 @@ class TaskCard extends StatelessWidget {
             // --- Tags ---
             Row(
               children: [
-                _buildTag(statusName, _getStatusColor(statusName)),
+                _buildTag(statusName, statusColor),
                 const SizedBox(width: 8),
-                _buildTag(priorityName, _getPriorityColor(priorityName)),
+                _buildTag(priorityName, priorityColor),
               ],
             ),
             const Divider(height: 24, thickness: 0.5),
 
-            // --- Assigned Users ---
-            Row(
-              children: [
-                const Icon(
-                  Icons.group_outlined,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    displayAssignedUsers,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+            // --- Info Rows ---
+            _buildInfoRow(
+              icon: Icons.person_outline,
+              text: 'Created by $creatorName',
             ),
-
-            // ✅ --- ADDED CREATOR INFO ---
-            const SizedBox(height: 8), // Add some space
-            Row(
-              children: [
-                const Icon(
-                  Icons
-                      .person_outline, // A different icon to distinguish from 'group'
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Created by $creatorName', // Display the creator's name
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+            const SizedBox(height: 8),
+            _buildInfoRow(
+              icon: Icons.group_outlined,
+              text: displayAssignedUsers,
             ),
-            // --- END OF ADDED SECTION ---
+            const SizedBox(height: 8),
+            _buildInfoRow(
+              icon: Icons.calendar_today_outlined,
+              text:
+                  'Created on ${DateFormat('MMM d, yyyy').format(task.createdAt)}',
+            ),
           ],
         ),
       ),
     );
   }
 
-  // ... (_buildTag method remains unchanged)
+  // This method builds the colored status/priority tags.
   Widget _buildTag(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -176,6 +121,26 @@ class TaskCard extends StatelessWidget {
           fontSize: 12,
         ),
       ),
+    );
+  }
+
+  // ✅ REVERTED: This helper widget now only needs to handle an IconData.
+  Widget _buildInfoRow({required IconData icon, required String text}) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.textSecondary, size: 20),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }
