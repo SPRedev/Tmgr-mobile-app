@@ -9,8 +9,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 class ApiService {
-  // static const String _baseUrl = 'https://api.sarlpro.com/api';
-  static const String _baseUrl = 'http://192.168.100.11/tmgr/api/public/api';
+  static const String _baseUrl = 'https://api.sarlpro.com/api';
+  // static const String _baseUrl = 'http://192.168.100.11/tmgr/api/public/api';
   final _storage = const FlutterSecureStorage();
 
   Future<String?> _getToken() async {

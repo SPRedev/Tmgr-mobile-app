@@ -18,8 +18,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _apiService = ApiService();
 
   // Initialize with default values for easier testing/debugging.
-  final _emailController = TextEditingController(text: 'admin@sarlpro.com');
-  final _passwordController = TextEditingController(text: 'password');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   _LoginState _loginState = _LoginState.idle;
   bool _isPasswordObscured = true;
@@ -89,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
         centerTitle: true, // Centering the title often looks more modern
         backgroundColor: Theme.of(context).primaryColor, // Use the dark teal
         foregroundColor: Colors.white, // Set ALL text and icons to white
-      
+
         elevation: 0, // A flat AppBar can also feel more modern
       ),
       body: Center(
