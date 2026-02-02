@@ -5,16 +5,20 @@ import 'package:ruko_mobile_app/screens/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart'; // ✅ ADD
 import 'package:ruko_mobile_app/api/firebase_api.dart'; // ✅ ADD
 import 'firebase_options.dart';
+import 'dart:async';
 
 // --- AppColors Class ---
 // This class provides a centralized, static, and constant source for all theme colors.
 // Using 'const' ensures these color values are compile-time constants for performance.
+
+final StreamController<void> notificationStream = StreamController.broadcast();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
+
 class AppColors {
   // Private constructor to prevent instantiation of this class.
- 
- AppColors._();
+
+  AppColors._();
 
   // --- Brand & Core Colors ---
   // A deep, strong teal from the darker part of your logo. Excellent for primary elements.

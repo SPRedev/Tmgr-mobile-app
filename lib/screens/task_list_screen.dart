@@ -10,6 +10,8 @@ import 'package:ruko_mobile_app/screens/task_detail_screen.dart';
 import 'package:ruko_mobile_app/widgets/task_card.dart';
 import 'package:ruko_mobile_app/widgets/filter_chip.dart';
 import 'package:ruko_mobile_app/screens/change_password_screen.dart';
+import 'dart:async';
+import 'package:ruko_mobile_app/main.dart';
 import 'package:badges/badges.dart' as badges;
 
 // Enum to manage the screen's state, making the build method cleaner.
@@ -45,18 +47,24 @@ class _TaskListScreenState extends State<TaskListScreen> {
   int? _selectedProjectId;
   int? _selectedPriorityId;
   bool _assignedToMeOnly = false;
+ StreamSubscription? _notificationSubscription;
 
   @override
   void initState() {
     super.initState();
     _fetchData();
     _searchController.addListener(_applyAllFilters);
+    _notificationSubscription = notificationStream.stream.listen((_) {
+      if (mounted) {
+        _fetchData();
+      }
+    });
   }
-
   @override
   void dispose() {
     _searchController.removeListener(_applyAllFilters);
     _searchController.dispose();
+   _notificationSubscription?.cancel();
     super.dispose();
   }
 
