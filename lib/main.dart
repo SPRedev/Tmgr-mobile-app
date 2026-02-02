@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart'; // ✅ ADD
 import 'package:ruko_mobile_app/api/firebase_api.dart'; // ✅ ADD
 import 'firebase_options.dart';
 import 'dart:async';
+import 'package:ruko_mobile_app/services/navigation_service.dart';
 
 // --- AppColors Class ---
 // This class provides a centralized, static, and constant source for all theme colors.
@@ -73,8 +74,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: NavigationService.navigatorKey,
       scaffoldMessengerKey: scaffoldMessengerKey,
-      title: 'Ruko Mobile', // A more concise app title
+      title: 'Ruko Mobile',
       debugShowCheckedModeBanner: false,
 
       // --- Centralized App Theme ---
