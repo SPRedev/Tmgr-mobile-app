@@ -1,3 +1,5 @@
+// lib/screens/notification_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:ruko_mobile_app/api_service.dart';
 import 'package:intl/intl.dart';
@@ -62,23 +64,24 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
-  void _handleNotificationTap(int index) {
+  // ✅ THIS IS THE CORRECTED METHOD
+  Future<void> _handleNotificationTap(int index) async {
     final notification = _notifications[index];
-
-    // FIX: Use the _safeParseInt helper function here.
-    // The original code `int.tryParse(notification['task_id']?.toString() ?? '')`
-    // would result in `null` if the string is empty, causing an error.
     final int taskId = _safeParseInt(notification['task_id']);
-
     final int notificationId = _safeParseInt(notification['id']);
 
     if (taskId == 0) {
-      // Check against 0, as that's the default for a failed parse.
       _showErrorSnackBar('This notification is not linked to a valid task.');
       return;
     }
 
-    // The rest of your original logic is kept exactly as it was.
+    // Immediately delete the notification from the server in the background.
+    // We use .catchError so it doesn't crash the app if it fails.
+    _apiService.deleteNotification(notificationId).catchError((e) {
+      print("Failed to delete notification $notificationId from server: $e");
+    });
+
+    // Remove the notification from the local list so the UI updates instantly.
     setState(() {
       _notifications.removeAt(index);
       if (_notifications.isEmpty) {
@@ -86,14 +89,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
       }
     });
 
-    _apiService.deleteNotification(notificationId).catchError((e) {
-      print("Failed to delete notification $notificationId from server: $e");
-    });
-
-    Navigator.push<bool>(
+    // 1. Navigate to the Task Detail Screen and WAIT for it to be closed.
+    await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (context) => TaskDetailScreen(taskId: taskId)),
     );
+
+    // 2. After the user comes back from the Task Detail Screen,
+    //    pop THIS screen (NotificationScreen) and send the "true" signal
+    //    back to the TaskListScreen, telling it to refresh.
+    if (mounted) {
+      Navigator.of(context).pop(true); // Send the "refresh" signal
+    }
   }
 
   // --- UI BUILDERS ---

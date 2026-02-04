@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.10.1 <4.0.0'
+  sdk: '>=3.10.1 <4.0.0' # Using a range is safer for future compatibility
 
 dependencies:
   flutter:
@@ -22,37 +22,39 @@ dependencies:
   msix: ^3.16.13
   web_socket_channel: ^3.0.3
 
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   
+  # This is the package that generates your app icons.
   flutter_launcher_icons: ^0.13.1
+
   flutter_lints: ^2.0.0
 
+# This section is for Flutter-specific configurations.
 flutter:
   uses-material-design: true
+
+  # This section tells your app which asset files to include in the build.
+  # It's crucial for the icon generator and for using images in your app.
   assets:
     - assets/logo.png
 
 # This is the configuration block for the app icon generator.
+# It tells the package where to find your logo and how to create the icons.
+# It is correctly placed at the root level (no indentation ).
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   image_path: "assets/logo.png"
   min_sdk_android: 21
-  
-  # ✅ THIS IS THE CORRECTED WEB CONFIGURATION
-  web:
-    generate: true
-    image_path: "assets/logo.png"
-    background_color: "#0D5D6E" # A dark teal from your theme
-    theme_color: "#0D5D6E"
 
-# This is the configuration for the Windows MSIX installer.
+# Add this entire block to the end of your pubspec.yaml file
 msix_config:
   display_name: Ruko Mobile App
   publisher_display_name: SARLPRO
   identity_name: com.sarlpro.rukomobileapp
-  version: 1.0.0.2
+  version: 1.0.0.2 # We use .2 to show it's a new version
   logo_path: assets\logo.png
   vclibs_framework_enabled: true

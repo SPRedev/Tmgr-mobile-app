@@ -13,10 +13,12 @@ import 'package:ruko_mobile_app/screens/change_password_screen.dart';
 import 'dart:async';
 import 'package:ruko_mobile_app/main.dart';
 import 'package:badges/badges.dart' as badges;
+import 'package:ruko_mobile_app/services/web_socket_service.dart'; // Import the service
 
 // Enum to manage the screen's state, making the build method cleaner.
 enum _ScreenState { loading, error, loaded, empty }
 
+// ✅ THIS IS THE MISSING CLASS DEFINITION
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
 
@@ -47,24 +49,48 @@ class _TaskListScreenState extends State<TaskListScreen> {
   int? _selectedProjectId;
   int? _selectedPriorityId;
   bool _assignedToMeOnly = false;
- StreamSubscription? _notificationSubscription;
+
+  StreamSubscription? _notificationSubscription;
+
+  // WebSocket Variables
+  final WebSocketService _webSocketService = WebSocketService();
+  StreamSubscription? _webSocketSubscription;
 
   @override
   void initState() {
     super.initState();
     _fetchData();
     _searchController.addListener(_applyAllFilters);
+
+    // This is for mobile push notifications
     _notificationSubscription = notificationStream.stream.listen((_) {
       if (mounted) {
         _fetchData();
       }
     });
+
+    // This is for web real-time updates
+    _webSocketService.connect();
+    _webSocketSubscription = _webSocketService.events.listen((_) {
+      if (mounted) {
+        print("✅ Real-time event received, refreshing data...");
+
+        // First, refresh the data in the background
+        _fetchData();
+      }
+    });
   }
+
   @override
   void dispose() {
     _searchController.removeListener(_applyAllFilters);
     _searchController.dispose();
-   _notificationSubscription?.cancel();
+    _notificationSubscription?.cancel();
+
+    // Cleanup for WebSocket
+    _webSocketSubscription?.cancel();
+    _webSocketService.disconnect();
+
     super.dispose();
   }
 

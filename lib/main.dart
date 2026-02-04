@@ -2,74 +2,68 @@
 
 import 'package:flutter/material.dart';
 import 'package:ruko_mobile_app/screens/splash_screen.dart';
-import 'package:firebase_core/firebase_core.dart'; // ✅ ADD
-import 'package:ruko_mobile_app/api/firebase_api.dart'; // ✅ ADD
+import 'package:firebase_core/firebase_core.dart';
+import 'package:ruko_mobile_app/api/firebase_api.dart';
 import 'firebase_options.dart';
 import 'dart:async';
 import 'package:ruko_mobile_app/services/navigation_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb; // ✅ ADD THIS IMPORT
+import 'dart:io'; // ✅ ADD THIS IMPORT
 
 // --- AppColors Class ---
-// This class provides a centralized, static, and constant source for all theme colors.
-// Using 'const' ensures these color values are compile-time constants for performance.
-
+// (This class is unchanged)
 final StreamController<void> notificationStream = StreamController.broadcast();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
 class AppColors {
-  // Private constructor to prevent instantiation of this class.
-
   AppColors._();
-
-  // --- Brand & Core Colors ---
-  // A deep, strong teal from the darker part of your logo. Excellent for primary elements.
   static const Color primary = Color(0xFF0D5D6E);
-
-  // A lighter, vibrant cyan from the logo, perfect for accents or highlights.
   static const Color secondary = Color(0xFF25A4A6);
-
-  static const Color background = Color(
-    0xFFF5F5F7,
-  ); // A clean, neutral background
+  static const Color background = Color(0xFFF5F5F7);
   static const Color cardBackground = Color(0xFFFFFFFF);
-
-  // --- Text Colors ---
-  static const Color textPrimary = Color(0xFF212121); // A slightly softer black
-  static const Color textSecondary = Color(
-    0xFF757575,
-  ); // A standard grey for subtitles
-
-  // --- Semantic Colors (chosen to complement the new teal theme) ---
-  static const Color urgentPriority = Color(
-    0xFFD32F2F,
-  ); // A deep red for 'Urgent'
-  static const Color highPriority = Color(
-    0xFFFFA000,
-  ); // A strong amber for 'High'
-  static const Color mediumPriority = Color(
-    0xFF388E3C,
-  ); // A clear green for 'Medium'
-
-  // --- Semantic Colors for Statuses ---
-  static const Color statusOpen = Color(
-    0xFF1976D2,
-  ); // A standard blue for 'Open'
-  static const Color statusDone = Color(0xFF388E3C); // A clear green for 'Done'
+  static const Color textPrimary = Color(0xFF212121);
+  static const Color textSecondary = Color(0xFF757575);
+  static const Color urgentPriority = Color(0xFFD32F2F);
+  static const Color highPriority = Color(0xFFFFA000);
+  static const Color mediumPriority = Color(0xFF388E3C);
+  static const Color statusOpen = Color(0xFF1976D2);
+  static const Color statusDone = Color(0xFF388E3C);
 }
 
+// ✅ --- THIS IS THE CORRECTED main() FUNCTION ---
 Future<void> main() async {
-  // Ensure Flutter bindings are initialized
-  WidgetsFlutterBinding.ensureInitialized();
+  // This object will hold a potential startup error.
+  Object? startupError;
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    // Ensure Flutter bindings are initialized before any other Flutter code.
+    WidgetsFlutterBinding.ensureInitialized();
 
-  await FirebaseApi().initNotifications();
+    // Initialize Firebase. This is a common point of failure in release mode.
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  runApp(const MyApp());
+    // Only initialize push notifications on mobile platforms.
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      await FirebaseApi().initNotifications();
+    }
+  } catch (e) {
+    // If any of the above steps fail, we catch the error.
+    print("!!! FAILED TO INITIALIZE APP: $e");
+    startupError = e;
+  }
+
+  // Now, run the app. We pass the potential error to the MyApp widget.
+  runApp(MyApp(startupError: startupError));
 }
 
+// ✅ --- MyApp WIDGET IS UPDATED TO HANDLE THE ERROR ---
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final Object? startupError;
+
+  const MyApp({super.key, this.startupError});
 
   @override
   Widget build(BuildContext context) {
@@ -78,31 +72,24 @@ class MyApp extends StatelessWidget {
       scaffoldMessengerKey: scaffoldMessengerKey,
       title: 'Ruko Mobile',
       debugShowCheckedModeBanner: false,
-
-      // --- Centralized App Theme ---
       theme: ThemeData(
         useMaterial3: true,
         primaryColor: AppColors.primary,
         scaffoldBackgroundColor: AppColors.background,
-        fontFamily: 'Roboto', // Ensure this font is added to your pubspec.yaml
-        // --- AppBar Theme ---
+        fontFamily: 'Roboto',
         appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.cardBackground,
-          foregroundColor:
-              AppColors.textPrimary, // Sets color for icons and title
+          foregroundColor: AppColors.textPrimary,
           elevation: 1,
-          surfaceTintColor: Colors.transparent, // Prevents M3 tinting on scroll
+          surfaceTintColor: Colors.transparent,
           titleTextStyle: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            fontFamily: 'Roboto', // Explicitly define font family
+            fontFamily: 'Roboto',
           ),
         ),
-
-        // --- Card Theme ---
         cardTheme: CardThemeData(
-          // ✅ CORRECTED: Use CardThemeData
           elevation: 1,
           color: AppColors.cardBackground,
           shadowColor: Colors.black12,
@@ -110,14 +97,10 @@ class MyApp extends StatelessWidget {
             borderRadius: BorderRadius.circular(12.0),
           ),
         ),
-
-        // --- FloatingActionButton Theme ---
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
         ),
-
-        // --- ElevatedButton Theme ---
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
@@ -133,9 +116,32 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
+      // If there was a startup error, show an error screen.
+      // Otherwise, show the normal SplashScreen.
+      home: startupError != null
+          ? ErrorScreen(error: startupError!)
+          : const SplashScreen(),
+    );
+  }
+}
 
-      // The home property points to the SplashScreen, which handles the initial auth check.
-      home: const SplashScreen(),
+// ✅ --- A NEW, SIMPLE WIDGET TO DISPLAY THE STARTUP ERROR ---
+class ErrorScreen extends StatelessWidget {
+  final Object error;
+  const ErrorScreen({super.key, required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'Failed to start the application.\nPlease contact support.\n\nError: $error',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
     );
   }
 }

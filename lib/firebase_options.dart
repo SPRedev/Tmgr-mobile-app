@@ -30,10 +30,7 @@ class DefaultFirebaseOptions {
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -70,6 +67,15 @@ class DefaultFirebaseOptions {
     projectId: 'actmgr-9b618',
     storageBucket: 'actmgr-9b618.firebasestorage.app',
     iosBundleId: 'com.example.rukoMobileApp',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyDFF_wtP_oYpbYQ9CIkvFphNG6uqTOb2mU',
+    appId: '1:2918996686:web:9370eb49930912f6054e9f',
+    messagingSenderId: '2918996686',
+    projectId: 'actmgr-9b618',
+    authDomain: 'actmgr-9b618.firebaseapp.com',
+    storageBucket: 'actmgr-9b618.firebasestorage.app',
   );
 
 }

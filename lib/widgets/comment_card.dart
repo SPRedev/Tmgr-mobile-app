@@ -110,38 +110,39 @@ class CommentCard extends StatelessWidget {
           ),
 
           // --- Action Menu ---
-          if (isAuthor)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
-              tooltip: 'Comment Actions',
-              onSelected: (value) {
-                if (value == 'edit') {
-                  onEdit();
-                } else if (value == 'delete') {
-                  onDelete();
-                }
-              },
-              itemBuilder: (BuildContext context) => [
-                const PopupMenuItem<String>(
-                  value: 'edit',
-                  child: ListTile(
-                    leading: Icon(Icons.edit, size: 20),
-                    title: Text('Edit'),
-                  ),
-                ),
-                const PopupMenuItem<String>(
-                  value: 'delete',
-                  child: ListTile(
-                    leading: Icon(
-                      Icons.delete_outline,
-                      size: 20,
-                      color: Colors.red,
-                    ),
-                    title: Text('Delete', style: TextStyle(color: Colors.red)),
-                  ),
-                ),
-              ],
-            ),
+          // if (isAuthor)
+
+          //   PopupMenuButton<String>(
+          //     icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
+          //     tooltip: 'Comment Actions',
+          //     onSelected: (value) {
+          //       if (value == 'edit') {
+          //         onEdit();
+          //       } else if (value == 'delete') {
+          //         onDelete();
+          //       }
+          //     },
+          //     itemBuilder: (BuildContext context) => [
+          //       const PopupMenuItem<String>(
+          //         value: 'edit',
+          //         child: ListTile(
+          //           leading: Icon(Icons.edit, size: 20),
+          //           title: Text('Edit'),
+          //         ),
+          //       ),
+          //       const PopupMenuItem<String>(
+          //         value: 'delete',
+          //         child: ListTile(
+          //           leading: Icon(
+          //             Icons.delete_outline,
+          //             size: 20,
+          //             color: Colors.red,
+          //           ),
+          //           title: Text('Delete', style: TextStyle(color: Colors.red)),
+          //         ),
+          //       ),
+          //     ],
+          //   ),
         ],
       ),
     );
